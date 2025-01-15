@@ -2,7 +2,7 @@
 using SvnClient;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Xml;
@@ -174,6 +174,7 @@ namespace ArgusLogoManager
             var parameters = new Parameters()
             {
                 Command = Command.CheckoutUpdate,
+                //Url = "https://subversion.assembla.com/svn/mediaportal.LogoPack-Germany/trunk",
                 Url = "https://subversion.assembla.com/svn/mediaportal.LogoPack-Germany/trunk",
                 Cleanup = true,
                 Mkdir = false,
@@ -181,7 +182,9 @@ namespace ArgusLogoManager
                 DeleteUnversioned = true,
                 TrustServerCert = true,
                 Verbose = true,
-                Path = LOGO_SRC_DIR.FullName
+                Path = LOGO_SRC_DIR.FullName,
+                Username = "dummy",
+                Password = "dummy"
             };
 
             SvnClient.SvnClient.CheckoutUpdate(parameters);
