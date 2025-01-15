@@ -6,8 +6,8 @@
 - `PM> Install-Package Microsoft.Extensions.Configuration.FileExtensions`
 - `PM> Install-Package Microsoft.Extensions.Configuration.Json`
 - `PM> Install-Package Microsoft.Extensions.Configuration.UserSecrets`
-- `PM> Install-Package System.Data.SqlClient`
-- `PM> Install-Package SharpSvn.1.9-x64`
+- `PM> Install-Package Microsoft.Data.SqlClient`
+- `PM> Install-Package SharpSvn`
 
 ## Config
 - `dotnet user-secrets init`
