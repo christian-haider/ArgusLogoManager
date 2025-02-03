@@ -6,13 +6,18 @@ using Microsoft.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using LibGit2Sharp;
 
 namespace ArgusLogoManager
 {
     internal class Program
     {
-        private DirectoryInfo LOGO_SRC_DIR = null;
-        private DirectoryInfo LOGO_TARGET_DIR = null;
+        private DirectoryInfo LOGO_SRC_DIR_SVN = null;
+        private DirectoryInfo LOGO_SRC_DIR_GIT = null;
+
+        private DirectoryInfo LOGO_TARGET_SVN = null;
+        private DirectoryInfo LOGO_TARGET_GIT = null;
+
         private string DB_CONNECTION_STRING = null;
 
         private List<(int ChannelType, string DisplayName)> argusTVChannels = new List<(int ChannelType, string DisplayName)>();
@@ -28,47 +33,64 @@ namespace ArgusLogoManager
             { "EURONEWS FRENCH SD", "EuroNews" },
             { "Folx TV", "Folx.TV" },
             { "France 24 (in English)", "France 24 (frz)" },
-			//{ "Genius Plus", "xxxx" },
-			//{ "Immer etwas Neues TV", "xxxx" },
 			{ "NHK WORLD-JPN", "NHK World" },
             { "NITRO Austria", "NITRO" },
             { "QVC Style HD", "QVC Beauty" },
-			//{ "QVC2 HD", "xxxx" },
-			{ "Radio Bremen TV", "Radio Bremen TV" },
             { "SR Fernsehen HD", "SR Fernsehen" },
             { "Sat 1 Gold Austria", "SAT.1 Gold Österreich" },
             { "Schau TV HD", "Schau TV" },
-			//{ "Sparhandy TV 2 HD", "xxxx" },
-			//{ "Sparhandy TV", "xxxx" },
 			{ "TLC Austria", "TLC" },
-			//{ "TV1 OOE", "xxxx" },
-			//{ "a.tv", "xxxx" },
 			{ "n-tv Austria", "n-tv" },
-			//{ "oe24.TV HD", "xxxx" },
-			//{ "tm3", "xxxx" },
+            { "gotv neu", "GoTV" },
+            { "Juwelo HD", "Juwelo TV" },
+            { "Radio Bremen HD", "Radio Bremen TV" },
+
+    		//{ "a.tv", "xxxx" },  
+			//{ "Bild Live TV", "xxxx" },  
+			//{ "CGTN", "xxxx" },  
+			//{ "CNBC HD", "xxxx" },  
+			//{ "Genius exklusiv", "xxxx" },  
+			//{ "Genius family", "xxxx" },  
+			//{ "Genius Plus", "xxxx" },  
+			//{ "Handystar TV HD", "xxxx" },  
+			//{ "Immer etwas Neues TV", "xxxx" },  
+			//{ "oe24.TV HD", "xxxx" },  
+			//{ "PULS 24 HD", "xxxx" },  
+			//{ "QVC2 HD", "xxxx" },  
+			//{ "Starparadies AT", "xxxx" },  
+			//{ "TV1 OOE", "xxxx" },  
+			//{ "Volksmusik", "xxxx" },  
+
 
 			// start radio
-			//{ "BR Heimat", "xxxx" },
-			//{ "Bremen Zwei", "xxxx" },
-			//{ "COSMO", "xxxx" },
-			//{ "DRadio DokDeb", "xxxx" },
-			//{ "Dlf Kultur", "xxxx" },
-			//{ "Dlf Nova", "xxxx" },
-			//{ "ERF Plus", "xxxx" },
-			//{ "LTC", "xxxx" },
-			//{ "MDR AKTUELL", "xxxx" },
-			//{ "MDR KULTUR", "xxxx" },
-			//{ "MDR S-ANHALT MD", "xxxx" },
-			//{ "MDR SACHSEN DD", "xxxx" },
-			//{ "NDR 1 Nieders. HAN", "xxxx" },
-			//{ "NDR 1 Radio MV SN", "xxxx" },
-			//{ "NDR 2 NDS", "xxxx" },
-			//{ "NDR Blue", "xxxx" },
-			//{ "NDR Info NDS", "xxxx" },
-			//{ "NDR1 Welle Nord KI", "xxxx" },
-			//{ "SWR Aktuell", "xxxx" },
-			//{ "UHD1 by ASTRA / HD+", "xxxx" },
-			//{ "WDR 2 Rheinland", "xxxx" },
+			{ "Dlf Kultur", "DKultur" },
+			{ "ERF Plus", "ERF Radio" },
+            { "COSMO", "WDRCosmo" }, // Conflict in https://github.com/Jasmeet181/mediaportal-de-logos/blob/master/LogoMapping.xml Cosmo ES TV/DE Radio
+
+			//{ "BR Heimat", "xxxx" },  
+			//{ "Bremen Zwei", "xxxx" },  
+			//{ "Die Maus", "xxxx" },  
+			//{ "Dlf Nova", "xxxx" },  
+			//{ "DRadio DokDeb", "xxxx" },  
+			//{ "LTC", "xxxx" },  
+			//{ "MDR AKTUELL", "xxxx" },  
+			//{ "MDR KULTUR", "xxxx" },  
+			//{ "MDR SACHSEN DD", "xxxx" },  
+			//{ "MDR S-ANHALT MD", "MDR S-ANHALT" },  
+			//{ "NDR 1 Nieders. HAN", "xxxx" },  
+			//{ "NDR 1 Radio MV SN", "xxxx" },  
+			//{ "NDR 2 NDS", "xxxx" },  
+			//{ "NDR Blue", "xxxx" },  
+			//{ "NDR Info NDS", "xxxx" },  
+			//{ "NDR1 Welle Nord KI", "xxxx" },  
+			//{ "QVC2 UHD", "xxxx" },  
+			//{ "radioB2  SCHLAGER", "xxxx" },  
+			//{ "rbb 88.8", "xxxx" },  
+			//{ "rbbKultur", "xxxx" },  
+			//{ "SCHLAGER-RADIO", "xxxx" },  
+			//{ "SWR Aktuell", "xxxx" },  
+			//{ "UHD1 by ASTRA / HD+", "xxxx" },  
+			//{ "WDR 2 Rheinland", "xxxx" },  
 		};
 
         private static NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -81,8 +103,12 @@ namespace ArgusLogoManager
                 .AddUserSecrets<Program>();
             Configuration = builder.Build();
 
-            LOGO_SRC_DIR = new DirectoryInfo(Configuration["Logos.Source.SVN"]);
-            LOGO_TARGET_DIR = new DirectoryInfo(Configuration["Logos.Target.DIR"]);
+            LOGO_SRC_DIR_SVN = new DirectoryInfo(Configuration["Logos.Source.SVN"]);
+            LOGO_SRC_DIR_GIT = new DirectoryInfo(Configuration["Logos.Source.GIT"]);
+
+            LOGO_TARGET_SVN = new DirectoryInfo(Configuration["Logos.Target.SVN"]);
+            LOGO_TARGET_GIT = new DirectoryInfo(Configuration["Logos.Target.GIT"]);
+
             DB_CONNECTION_STRING = Configuration["DB.ConnectionString"];
         }
 
@@ -92,9 +118,10 @@ namespace ArgusLogoManager
             try
             {
                 var program = new Program();
-                program.DownloadLogosFromMp();
+                program.DownloadLogosFromSources();
                 program.LoadChannelsFromArgusTv();
-                program.MatchLogos();
+                program.MatchLogos(program.LOGO_SRC_DIR_SVN, program.LOGO_TARGET_SVN);
+                program.MatchLogos(program.LOGO_SRC_DIR_GIT, program.LOGO_TARGET_GIT);
             }
             catch (Exception e)
             {
@@ -110,20 +137,23 @@ namespace ArgusLogoManager
             return fileName.Replace("\\", "_").Replace("/", "_").Replace(":", "_").Replace("*", "_").Replace("?", "_").Replace("\"", "_").Replace("<", "_").Replace(">", "_").Replace("|", "_");
         }
 
-        private void MatchLogos()
+        private void MatchLogos(DirectoryInfo sourceDir, DirectoryInfo targetDir)
         {
-            if (LOGO_TARGET_DIR.Exists)
+            if (targetDir.Exists)
             {
-                LOGO_TARGET_DIR.Delete(true);
-                LOGO_TARGET_DIR.Create();
+                targetDir.Delete(true);
+                targetDir.Create();
             }
             else
             {
-                LOGO_TARGET_DIR.Create();
+                targetDir.Create();
             }
 
             var logoMapping = new XmlDocument();
-            logoMapping.Load(Path.Combine(LOGO_SRC_DIR.FullName, "LogoMapping.xml"));
+            logoMapping.Load(Path.Combine(sourceDir.FullName, "LogoMapping.xml"));
+
+            Log.Info($"Using source '{sourceDir.FullName}' -> target '{targetDir.FullName}'");
+
             XmlNodeList logoItemList = logoMapping.SelectNodes("//Item");
 
             foreach (var channel in argusTVChannels)
@@ -148,9 +178,21 @@ namespace ArgusLogoManager
                         continue;
 
                     var filenameSrc = itemNode.ParentNode.SelectSingleNode("File").InnerText;
+                    
+                    // Error in https://github.com/Jasmeet181/mediaportal-de-logos/blob/master/LogoMapping.xml UHD1.png does not exist
+                    if (filenameSrc == "UHD1.png")
+                    {
+                        continue;
+                    }
 
-                    string srcFilename = Path.Combine(LOGO_SRC_DIR.FullName, channel.ChannelType == 0 ? "tv" : "radio", filenameSrc);
-                    string targetFilename = Path.Combine(LOGO_TARGET_DIR.FullName, NormalizeLogoFilename(channel.DisplayName) + ".png");
+                    string srcFilename = Path.Combine(sourceDir.FullName, channel.ChannelType == 0 ? "tv" : "radio", filenameSrc);
+
+                    if (sourceDir == LOGO_SRC_DIR_GIT)
+                    {
+                        srcFilename = Path.Combine(sourceDir.FullName, channel.ChannelType == 0 ? "TV\\.Light" : "Radio\\.Light", filenameSrc);
+                    }
+
+                    string targetFilename = Path.Combine(targetDir.FullName, NormalizeLogoFilename(channel.DisplayName) + ".png");
 
                     File.Copy(srcFilename, targetFilename);
                     Log.Info($"Channel '{channel}' Src '{srcFilename}' Target '{targetFilename}'");
@@ -164,17 +206,16 @@ namespace ArgusLogoManager
             }
         }
 
-        private void DownloadLogosFromMp()
+        private void DownloadLogosFromSources()
         {
-            if (!LOGO_SRC_DIR.Exists)
+            if (!LOGO_SRC_DIR_SVN.Exists)
             {
-                LOGO_SRC_DIR.Create();
+                LOGO_SRC_DIR_SVN.Create();
             }
 
             var parameters = new Parameters()
             {
                 Command = Command.CheckoutUpdate,
-                //Url = "https://subversion.assembla.com/svn/mediaportal.LogoPack-Germany/trunk",
                 Url = "https://subversion.assembla.com/svn/mediaportal.LogoPack-Germany/trunk",
                 Cleanup = true,
                 Mkdir = false,
@@ -182,12 +223,20 @@ namespace ArgusLogoManager
                 DeleteUnversioned = true,
                 TrustServerCert = true,
                 Verbose = true,
-                Path = LOGO_SRC_DIR.FullName,
+                Path = LOGO_SRC_DIR_SVN.FullName,
                 Username = "dummy",
                 Password = "dummy"
             };
 
             SvnClient.SvnClient.CheckoutUpdate(parameters);
+
+            if (!LOGO_SRC_DIR_GIT.Exists)
+            {
+                LOGO_SRC_DIR_GIT.Create();
+            }
+
+            // https://github.com/libgit2/libgit2sharp/wiki/git-clone
+            Repository.Clone("https://github.com/Jasmeet181/mediaportal-de-logos.git", LOGO_SRC_DIR_GIT.FullName);
         }
 
         private void LoadChannelsFromArgusTv()

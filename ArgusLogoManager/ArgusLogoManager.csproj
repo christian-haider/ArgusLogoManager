@@ -7,13 +7,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="LibGit2Sharp" Version="0.31.0" />
 		<PackageReference Include="SharpSvn" Version="1.14003.290" />
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.1" />
-		<PackageReference Include="NLog" Version="5.3.4" />
+		<PackageReference Include="NLog" Version="5.4.0" />
 	</ItemGroup>
 
 	<ItemGroup>
